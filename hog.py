@@ -1,3 +1,145 @@
+import code
+import functools
+import inspect
+import re
+import signal
+import sys
+
+
+def main(fn):
+    """Call fn with command line arguments.  Used as a decorator.
+
+    The main decorator marks the function that starts a program. For example,
+
+    @main
+    def my_run_function():
+        # function body
+
+    Use this instead of the typical __name__ == "__main__" predicate.
+    """
+    if inspect.stack()[1][0].f_locals['__name__'] == '__main__':
+        args = sys.argv[1:]  # Discard the script name from command line
+        fn(*args)  # Call the main function
+    return fn
+
+
+_PREFIX = ''
+
+
+def trace(fn):
+    """A decorator that prints a function's name, its arguments, and its return
+    values each time the function is called. For example,
+
+    @trace
+    def compute_something(x, y):
+        # function body
+    """
+    @functools.wraps(fn)
+    def wrapped(*args, **kwds):
+        global _PREFIX
+        reprs = [repr(e) for e in args]
+        reprs += [repr(k) + '=' + repr(v) for k, v in kwds.items()]
+        log('{0}({1})'.format(fn.__name__, ', '.join(reprs)) + ':')
+        _PREFIX += '    '
+        try:
+            result = fn(*args, **kwds)
+            _PREFIX = _PREFIX[:-4]
+        except Exception as e:
+            log(fn.__name__ + ' exited via exception')
+            _PREFIX = _PREFIX[:-4]
+            raise
+        # Here, print out the return value.
+        log('{0}({1}) -> {2}'.format(fn.__name__, ', '.join(reprs), result))
+        return result
+    return wrapped
+
+
+def log(message):
+    """Print an indented message (used with trace)."""
+    print(_PREFIX + re.sub('\n', '\n' + _PREFIX, str(message)))
+
+
+def log_current_line():
+    """Print information about the current line of code."""
+    frame = inspect.stack()[1]
+    log('Current line: File "{f[1]}", line {f[2]}, in {f[3]}'.format(f=frame))
+
+
+def interact(msg=None):
+    """Start an interactive interpreter session in the current environment.
+
+    On Unix:
+      <Control>-D exits the interactive session and returns to normal execution.
+    In Windows:
+      <Control>-Z <Enter> exits the interactive session and returns to normal
+      execution.
+    """
+    # evaluate commands in current namespace
+    frame = inspect.currentframe().f_back
+    namespace = frame.f_globals.copy()
+    namespace.update(frame.f_locals)
+
+    # exit on interrupt
+    def handler(signum, frame):
+        print()
+        exit(0)
+    signal.signal(signal.SIGINT, handler)
+
+    if not msg:
+        _, filename, line, _, _, _ = inspect.stack()[1]
+        msg = 'Interacting at File "{0}", line {1} \n'.format(filename, line)
+        msg += '    Unix:    <Control>-D continues the program; \n'
+        msg += '    Windows: <Control>-Z <Enter> continues the program; \n'
+        msg += '    exit() or <Control>-C exits the program'
+
+    code.interact(msg, None, namespace)
+    
+from random import randint
+
+
+def make_fair_dice(sides):
+    """Return a die that returns 1 to SIDES with equal chance."""
+    assert type(sides) == int and sides >= 1, 'Illegal value for sides'
+
+    def dice():
+        return randint(1, sides)
+    return dice
+
+
+four_sided = make_fair_dice(4)
+six_sided = make_fair_dice(6)
+
+
+def make_test_dice(*outcomes):
+    """Return a die that cycles deterministically through OUTCOMES.
+
+    >>> dice = make_test_dice(1, 2, 3)
+    >>> dice()
+    1
+    >>> dice()
+    2
+    >>> dice()
+    3
+    >>> dice()
+    1
+    >>> dice()
+    2
+
+    This function uses Python syntax/techniques not yet covered in this course.
+    The best way to understand it is by reading the documentation and examples.
+    """
+    assert len(outcomes) > 0, 'You must supply outcomes to make_test_dice'
+    for o in outcomes:
+        assert type(o) == int and o >= 1, 'Outcome is not a positive integer'
+    index = len(outcomes) - 1
+
+    def dice():
+        nonlocal index
+        index = (index + 1) % len(outcomes)
+        return outcomes[index]
+    return dice
+
+
 """The Game of Hog."""
 
 from dice import six_sided, make_test_dice
@@ -19,7 +161,6 @@ def roll_dice(num_rolls, dice=six_sided):
     # These assert statements ensure that num_rolls is a positive integer.
     assert type(num_rolls) == int, 'num_rolls must be an integer.'
     assert num_rolls > 0, 'Must roll at least once.'
-    # BEGIN PROBLEM 1
     counter = 0
     roll_log = ''
     while counter < num_rolls:
@@ -35,7 +176,6 @@ def roll_dice(num_rolls, dice=six_sided):
         if right_most == 1:
             return 1 
     return sum 
-    # END PROBLEM 1
 
 
 def tail_points(opponent_score):
@@ -44,11 +184,9 @@ def tail_points(opponent_score):
     opponent_score:   The total score of the other player.
 
     """
-    # BEGIN PROBLEM 2
     ones = opponent_score % 10
     tens = opponent_score // 10 % 10 
     return 2*abs(tens-ones) + 1 
-    # END PROBLEM 2
 
 
 def take_turn(num_rolls, opponent_score, dice=six_sided):
@@ -63,12 +201,10 @@ def take_turn(num_rolls, opponent_score, dice=six_sided):
     assert type(num_rolls) == int, 'num_rolls must be an integer.'
     assert num_rolls >= 0, 'Cannot roll a negative number of dice in take_turn.'
     assert num_rolls <= 10, 'Cannot roll more than 10 dice.'
-    # BEGIN PROBLEM 3
     if num_rolls == 0: 
         return tail_points(opponent_score)
     else: 
         return roll_dice(num_rolls, dice)
-    # END PROBLEM 3
 
 
 def simple_update(num_rolls, player_score, opponent_score, dice=six_sided):
@@ -88,8 +224,6 @@ def square_update(num_rolls, player_score, opponent_score, dice=six_sided):
     else:
         return score
 
-
-# BEGIN PROBLEM 4
 def perfect_square(x):
     k = 1 
     while k <= x: 
@@ -103,7 +237,6 @@ def next_perfect_square(x):
     add_1 = sqrt_x + 1 
     return int(add_1**2)
 
-# END PROBLEM 4
 
 
 def always_roll_5(score, opponent_score):
@@ -140,20 +273,13 @@ def play(strategy0, strategy1, update,
     goal:      The game ends and someone wins when this score is reached.
     """
     who = 0  # Who is about to take a turn, 0 (first) or 1 (second)
-    # BEGIN PROBLEM 5
     while score0 < goal and score1 < goal: 
         if who == 0: 
             score0 = update(strategy0(score0, score1), score0, score1, dice)
         elif who == 1: 
             score1 = update(strategy1(score1, score0), score1, score0, dice)
         who = 1 - who 
-    # END PROBLEM 5
     return score0, score1
-
-
-#######################
-# Phase 2: Strategies #
-#######################
 
 
 def always_roll(n):
@@ -170,9 +296,7 @@ def always_roll(n):
     3
     """
     assert n >= 0 and n <= 10
-    # BEGIN PROBLEM 6
     return lambda x, y: n 
-    # END PROBLEM 6
 
 
 def catch_up(score, opponent_score):
@@ -200,7 +324,6 @@ def is_always_roll(strategy, goal=GOAL):
     >>> is_always_roll(catch_up)
     False
     """
-    # BEGIN PROBLEM 7
     score, opp_score = 0, 0
     default_roll = strategy(score, opp_score)
     while score < goal: 
@@ -211,7 +334,7 @@ def is_always_roll(strategy, goal=GOAL):
             opp_score = opp_score + 1 
         score = score + 1 
     return True 
-    # END PROBLEM 7
+ 
 
 
 def make_averaged(original_function, total_samples=1000):
@@ -225,7 +348,6 @@ def make_averaged(original_function, total_samples=1000):
     >>> averaged_dice(1, dice)  # The avg of 10 4's, 10 2's, 10 5's, and 10 1's
     3.0
     """
-    # BEGIN PROBLEM 8
     def average_value(*args): 
         k, total_values = 0, 0
         while k < total_samples: 
@@ -235,7 +357,6 @@ def make_averaged(original_function, total_samples=1000):
     return average_value 
 
 
-    # END PROBLEM 8
 
 
 def max_scoring_num_rolls(dice=six_sided, total_samples=1000):
@@ -247,7 +368,6 @@ def max_scoring_num_rolls(dice=six_sided, total_samples=1000):
     >>> max_scoring_num_rolls(dice)
     1
     """
-    # BEGIN PROBLEM 9
     logger, compare = 1, 0
     average_calculator = make_averaged(roll_dice, total_samples)
     while logger <= 10: 
@@ -258,7 +378,7 @@ def max_scoring_num_rolls(dice=six_sided, total_samples=1000):
         logger = logger + 1 
     return placement 
 
-    # END PROBLEM 9
+   
 
 
 def winner(strategy0, strategy1):
@@ -300,11 +420,10 @@ def tail_strategy(score, opponent_score, threshold=12, num_rolls=6):
     """This strategy returns 0 dice if Pig Tail gives at least THRESHOLD
     points, and returns NUM_ROLLS otherwise. Ignore score and Square Swine.
     """
-    # BEGIN PROBLEM 10
     if tail_points(opponent_score) >= threshold: 
         return 0 
     return num_rolls  # Remove this line once implemented.
-    # END PROBLEM 10
+    
 
 
 def square_strategy(score, opponent_score, threshold=12, num_rolls=6):
@@ -313,18 +432,7 @@ def square_strategy(score, opponent_score, threshold=12, num_rolls=6):
     if tail_points(opponent_score) >= threshold or square_update(0, score, opponent_score) - score >= threshold:
         return 0
     return num_rolls  # Remove this line once implemented.
-    # END PROBLEM 11
-
-
-def final_strategy(score, opponent_score):
-    """Write a brief description of your final strategy.
-
-    *** YOUR DESCRIPTION HERE ***
-    """
-    # BEGIN PROBLEM 12
-    return 6  # Remove this line once implemented.
-    # END PROBLEM 12
-
+     
 
 ##########################
 # Command Line Interface #
