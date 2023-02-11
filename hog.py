@@ -5,6 +5,7 @@ import re
 import signal
 import sys
 
+"""The code below was not written by me; it was pre-written for the assignment."""
 
 def main(fn):
     """Call fn with command line arguments.  Used as a decorator.
@@ -139,11 +140,9 @@ def make_test_dice(*outcomes):
         return outcomes[index]
     return dice
 
+"""The code below was written by me."""
 
 """The Game of Hog."""
-
-from dice import six_sided, make_test_dice
-from ucb import main, trace, interact
 from math import log2
 
 GOAL = 100  # The goal of Hog is to score 100 points.
@@ -177,7 +176,6 @@ def roll_dice(num_rolls, dice=six_sided):
             return 1 
     return sum 
 
-
 def tail_points(opponent_score):
     """Return the points scored by rolling 0 dice according to Pig Tail.
 
@@ -187,7 +185,6 @@ def tail_points(opponent_score):
     ones = opponent_score % 10
     tens = opponent_score // 10 % 10 
     return 2*abs(tens-ones) + 1 
-
 
 def take_turn(num_rolls, opponent_score, dice=six_sided):
     """Return the points scored on a turn rolling NUM_ROLLS dice when the
@@ -206,13 +203,11 @@ def take_turn(num_rolls, opponent_score, dice=six_sided):
     else: 
         return roll_dice(num_rolls, dice)
 
-
 def simple_update(num_rolls, player_score, opponent_score, dice=six_sided):
     """Return the total score of a player who starts their turn with
     PLAYER_SCORE and then rolls NUM_ROLLS DICE, ignoring Square Swine.
     """
     return player_score + take_turn(num_rolls, opponent_score, dice)
-
 
 def square_update(num_rolls, player_score, opponent_score, dice=six_sided):
     """Return the total score of a player who starts their turn with
@@ -237,14 +232,11 @@ def next_perfect_square(x):
     add_1 = sqrt_x + 1 
     return int(add_1**2)
 
-
-
 def always_roll_5(score, opponent_score):
     """A strategy of always rolling 5 dice, regardless of the player's score or
     the oppononent's score.
     """
     return 5
-
 
 def play(strategy0, strategy1, update,
          score0=0, score1=0, dice=six_sided, goal=GOAL):
@@ -281,7 +273,6 @@ def play(strategy0, strategy1, update,
         who = 1 - who 
     return score0, score1
 
-
 def always_roll(n):
     """Return a player strategy that always rolls N dice.
 
@@ -298,7 +289,6 @@ def always_roll(n):
     assert n >= 0 and n <= 10
     return lambda x, y: n 
 
-
 def catch_up(score, opponent_score):
     """A player strategy that always rolls 5 dice unless the opponent
     has a higher score, in which case 6 dice are rolled.
@@ -312,8 +302,7 @@ def catch_up(score, opponent_score):
         return 6  # Roll one more to catch up
     else:
         return 5
-
-
+    
 def is_always_roll(strategy, goal=GOAL):
     """Return whether strategy always chooses the same number of dice to roll.
 
@@ -334,8 +323,6 @@ def is_always_roll(strategy, goal=GOAL):
             opp_score = opp_score + 1 
         score = score + 1 
     return True 
- 
-
 
 def make_averaged(original_function, total_samples=1000):
     """Return a function that returns the average value of ORIGINAL_FUNCTION
@@ -356,9 +343,6 @@ def make_averaged(original_function, total_samples=1000):
         return total_values/total_samples
     return average_value 
 
-
-
-
 def max_scoring_num_rolls(dice=six_sided, total_samples=1000):
     """Return the number of dice (1 to 10) that gives the highest average turn score
     by calling roll_dice with the provided DICE a total of TOTAL_SAMPLES times.
@@ -378,9 +362,6 @@ def max_scoring_num_rolls(dice=six_sided, total_samples=1000):
         logger = logger + 1 
     return placement 
 
-   
-
-
 def winner(strategy0, strategy1):
     """Return 0 if strategy0 wins against strategy1, and 1 otherwise."""
     score0, score1 = play(strategy0, strategy1, square_update)
@@ -389,16 +370,13 @@ def winner(strategy0, strategy1):
     else:
         return 1
 
-
 def average_win_rate(strategy, baseline=always_roll(6)):
     """Return the average win rate of STRATEGY against BASELINE. Averages the
     winrate when starting the game as player 0 and as player 1.
     """
     win_rate_as_player_0 = 1 - make_averaged(winner)(strategy, baseline)
     win_rate_as_player_1 = make_averaged(winner)(baseline, strategy)
-
     return (win_rate_as_player_0 + win_rate_as_player_1) / 2
-
 
 def run_experiments():
     """Run a series of strategy experiments and report results."""
@@ -409,12 +387,8 @@ def run_experiments():
     print('catch_up win rate:', average_win_rate(catch_up))
     print('always_roll(3) win rate:', average_win_rate(always_roll(3)))
     print('always_roll(8) win rate:', average_win_rate(always_roll(8)))
-
     print('tail_strategy win rate:', average_win_rate(tail_strategy))
     print('square_strategy win rate:', average_win_rate(square_strategy))
-    print('final_strategy win rate:', average_win_rate(final_strategy))
-    "*** You may add additional experiments as you wish ***"
-
 
 def tail_strategy(score, opponent_score, threshold=12, num_rolls=6):
     """This strategy returns 0 dice if Pig Tail gives at least THRESHOLD
@@ -422,17 +396,16 @@ def tail_strategy(score, opponent_score, threshold=12, num_rolls=6):
     """
     if tail_points(opponent_score) >= threshold: 
         return 0 
-    return num_rolls  # Remove this line once implemented.
+    return num_rolls 
     
-
-
 def square_strategy(score, opponent_score, threshold=12, num_rolls=6):
     """This strategy returns 0 dice when your score would increase by at least threshold."""
     # BEGIN PROBLEM 11
     if tail_points(opponent_score) >= threshold or square_update(0, score, opponent_score) - score >= threshold:
         return 0
-    return num_rolls  # Remove this line once implemented.
-     
+    return num_rolls  
+
+"""The code below was not written by me."""     
 
 ##########################
 # Command Line Interface #
